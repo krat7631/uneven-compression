@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+dist/
+
+# run artifacts: large, regenerable
+results/
+*.npy
+*.parquet
+slurm-*.out
+*.out
+
+.DS_Store

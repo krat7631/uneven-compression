@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uneven-compression"
+version = "0.1.0"
+description = "An embedding inference service for measuring how quantization and batching trade quality for speed."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Devansh Jignesh Nayak" },
+    { name = "Venkatashivasai Muppidi" },
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "datasets",
+]
+
+[project.optional-dependencies]
+# Model serving needs a GPU stack. On Explorer these come from the course
+# container; locally, install with `pip install -e ".[model]"`.
+model = ["torch", "transformers", "accelerate", "bitsandbytes"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
