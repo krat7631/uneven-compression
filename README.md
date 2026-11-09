@@ -45,4 +45,19 @@ pytest
 
 ## Usage
 
-Usage examples will be added as the modules are implemented.
+```python
+from uneven_compression.ingestion import load_banking77, load_scifact
+from uneven_compression.batching import make_batches
+
+test = load_banking77("test")                 # 3,076 validated Requests
+batches = make_batches(test, batch_size=32)   # 97 batches: 96 x 32, then 1 x 4
+
+corpus, queries, qrels = load_scifact("test") # 5,183 docs, 300 judged queries
+```
+
+Any invalid record raises `ValidationError` and stops the load, so bad data
+can never silently change the number of examples a run measures.
+
+Banking77 is MTEB's copy (`mteb/banking77`: 9,993 train / 3,076 test), which
+differs from the original release by 14 rows; it is used so baselines are
+directly comparable to published MTEB scores.
