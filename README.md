@@ -58,6 +58,19 @@ corpus, queries, qrels = load_scifact("test") # 5,183 docs, 300 judged queries
 Any invalid record raises `ValidationError` and stops the load, so bad data
 can never silently change the number of examples a run measures.
 
-Banking77 is MTEB's copy (`mteb/banking77`: 9,993 train / 3,076 test), which
-differs from the original release by 14 rows; it is used so baselines are
-directly comparable to published MTEB scores.
+Banking77 is MTEB's current copy (`mteb/banking77`: 9,993 train / 3,076 test),
+which differs from the original release by 14 rows. The published bge-small
+Banking77 score used an older revision (`0fd18e25`, 10,003 / 3,080), so the
+calibration step in `scripts/fp32_baseline.py` loads that revision separately.
+
+## FP32 baseline
+
+```bash
+pip install -e ".[dev,model]"
+python scripts/fp32_baseline.py     # writes results/fp32_baseline.json
+```
+
+Runs on CUDA, Apple MPS or CPU. Reports Banking77 accuracy, macro-F1 and
+per-intent F1 (logistic regression on all training embeddings), a calibration
+against the published score using MTEB's classification recipe, and SciFact
+nDCG@10.
