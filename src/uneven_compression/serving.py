@@ -80,14 +80,27 @@ def cls_pool_normalize(last_hidden_state) -> np.ndarray:
     return cls.cpu().numpy()
 
 
-def embed_texts(tokenizer, model, device: str, texts: Sequence[str]) -> np.ndarray:
-    """Embed one batch of texts. Returns a (len(texts), 384) float32 array, rows in input order."""
+def tokenize_batch(tokenizer, device: str, texts: Sequence[str]):
+    """Steps 1-2 of embedding: texts -> padded token ids on `device`."""
+    return tokenizer(list(texts), padding=True, truncation=True,
+                     max_length=MAX_LENGTH, return_tensors="pt").to(device)
+
+
+def run_model(model, enc):
+    """Step 3 of embedding: the model's forward pass. Returns the last hidden state."""
     import torch
-    enc = tokenizer(list(texts), padding=True, truncation=True,
-                    max_length=MAX_LENGTH, return_tensors="pt").to(device)
     with torch.inference_mode():
-        out = model(**enc)
-    return cls_pool_normalize(out.last_hidden_state)
+        return model(**enc).last_hidden_state
+
+
+def embed_texts(tokenizer, model, device: str, texts: Sequence[str]) -> np.ndarray:
+    """Embed one batch of texts. Returns a (len(texts), 384) float32 array, rows in input order.
+
+    The timing harness runs these same three steps, so what it times is what we serve.
+    """
+    enc = tokenize_batch(tokenizer, device, texts)
+    hidden = run_model(model, enc)
+    return cls_pool_normalize(hidden)
 
 
 def embed_batches(tokenizer, model, device: str, batches: Sequence[Sequence[str]]) -> np.ndarray:
