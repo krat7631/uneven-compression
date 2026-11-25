@@ -3,6 +3,7 @@ import pytest
 from uneven_compression.ingestion import (
     Request,
     ValidationError,
+    check_row_count,
     load_banking77,
     load_scifact,
     validate_record,
@@ -97,3 +98,24 @@ def test_load_scifact_rejects_duplicate_document_ids():
     corpus.append({"_id": "10", "title": "dup", "text": "again"})
     with pytest.raises(ValidationError, match="duplicate"):
         load_scifact("test", corpus, queries, qrels)
+
+
+# ---- expected row counts (Hub downloads only) -------------------------------
+
+def test_row_count_mismatch_raises():
+    with pytest.raises(ValidationError, match="banking77/test"):
+        check_row_count("banking77", "test", 3_072)
+
+
+def test_row_count_match_passes():
+    check_row_count("banking77", "test", 3_076)
+
+
+def test_caller_supplied_rows_skip_the_count_check():
+    rows = [{"text": "where is my card?", "label": 11}]
+    assert len(load_banking77("test", rows=rows)) == 1
+
+
+def test_scifact_count_mismatch_names_the_table():
+    with pytest.raises(ValidationError, match="scifact/test-qrels"):
+        check_row_count("scifact", "test-qrels", 338)

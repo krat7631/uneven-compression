@@ -18,6 +18,16 @@ BANKING77 = "mteb/banking77"
 SCIFACT = "mteb/scifact"
 BANKING77_NUM_LABELS = 77
 
+# Row counts of the Hub copies we measure on. A download that does not match
+# means the dataset changed upstream (or rows went missing): stop, don't measure.
+EXPECTED_ROWS = {
+    ("banking77", "train"): 9_993,
+    ("banking77", "test"): 3_076,
+    ("scifact", "corpus"): 5_183,
+    ("scifact", "test-queries"): 300,
+    ("scifact", "test-qrels"): 339,
+}
+
 
 class ValidationError(ValueError):
     """A record failed validation. The message names the record and the rule."""
@@ -72,6 +82,17 @@ def validate_record(request_id: str, text: Any, label: Any = None,
     return Request(request_id=request_id, text=text, label=label, title=title)
 
 
+def check_row_count(dataset: str, split: str, actual: int) -> None:
+    """Raise ValidationError if `actual` differs from EXPECTED_ROWS[(dataset, split)].
+
+    The message must say which dataset and split, the expected count and the
+    actual count, so a mismatch is diagnosable from the error alone.
+    """
+    expected = EXPECTED_ROWS[(dataset, split)]
+    if actual != expected:
+        raise ValidationError(f"{dataset}/{split}: expected {expected} rows, got {actual}")
+
+
 def _ensure_unique(requests: list[Request]) -> list[Request]:
     seen: set[str] = set()
     for r in requests:
@@ -87,7 +108,8 @@ def load_banking77(split: str, rows: Iterable[Mapping[str, Any]] | None = None) 
     `rows` lets tests pass hand-written records; by default the split is
     downloaded from the Hub.
     """
-    if rows is None:
+    from_hub = rows is None
+    if from_hub:
         from datasets import load_dataset
         rows = load_dataset(BANKING77, split=split)
     requests = [
@@ -95,6 +117,8 @@ def load_banking77(split: str, rows: Iterable[Mapping[str, Any]] | None = None) 
                         num_labels=BANKING77_NUM_LABELS)
         for i, row in enumerate(rows)
     ]
+    if from_hub:
+        check_row_count("banking77", split, len(requests))
     return _ensure_unique(requests)
 
 
@@ -111,7 +135,9 @@ def load_scifact(split: str,
     Returns (corpus, queries, qrels) where qrels maps
     "query:<id>" -> {"doc:<id>": relevance score}.
     """
-    if corpus_rows is None or query_rows is None or qrel_rows is None:
+    # Any missing table triggers a download of all three, so all three are Hub data.
+    from_hub = corpus_rows is None or query_rows is None or qrel_rows is None
+    if from_hub:
         from datasets import load_dataset
         corpus_rows = load_dataset(SCIFACT, "corpus", split="corpus")
         query_rows = load_dataset(SCIFACT, "queries", split="queries")
@@ -140,5 +166,11 @@ def load_scifact(split: str,
     missing_docs = {d for judged in qrels.values() for d in judged} - doc_ids
     if missing_docs:
         raise ValidationError(f"qrels reference {len(missing_docs)} unknown documents, e.g. {sorted(missing_docs)[:3]}")
+
+    if from_hub:
+        check_row_count("scifact", "corpus", len(corpus))
+        check_row_count("scifact", f"{split}-queries", len(queries))
+        # Count (query, document) pairs, the unit nDCG is computed over.
+        check_row_count("scifact", f"{split}-qrels", sum(len(judged) for judged in qrels.values()))
 
     return corpus, queries, qrels
