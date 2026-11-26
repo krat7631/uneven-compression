@@ -22,6 +22,8 @@ dependencies = [
 # Model serving needs a GPU stack. On Explorer these come from the course
 # container; locally, install with `pip install -e ".[model]"`.
 model = ["torch", "transformers", "accelerate", "bitsandbytes"]
+# Scoring, analysis and figures run on any machine (no GPU).
+analysis = ["scikit-learn", "matplotlib", "pyarrow"]
 dev = ["pytest"]
 
 [tool.setuptools.packages.find]

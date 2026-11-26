@@ -12,6 +12,24 @@ from collections.abc import Mapping, Sequence
 import numpy as np
 
 
+def fit_classifier(train_x, train_y, max_iter: int = 1000, seed: int = 0):
+    """The one classifier every quality number uses: logistic regression on frozen embeddings."""
+    from sklearn.linear_model import LogisticRegression
+    return LogisticRegression(max_iter=max_iter, random_state=seed).fit(train_x, train_y)
+
+
+def classification_proba(train_x: np.ndarray, train_y: Sequence[int], test_x: np.ndarray,
+                         num_labels: int, max_iter: int = 1000, seed: int = 0) -> np.ndarray:
+    """(n_test, num_labels) class probabilities from the same classifier as classification_scores.
+
+    Column i is label i (raises if some label never appears in training).
+    """
+    clf = fit_classifier(train_x, train_y, max_iter, seed)
+    if list(clf.classes_) != list(range(num_labels)):
+        raise ValueError("every label must appear in the training data")
+    return clf.predict_proba(test_x)
+
+
 def classification_scores(train_x: np.ndarray, train_y: Sequence[int],
                           test_x: np.ndarray, test_y: Sequence[int],
                           num_labels: int, max_iter: int = 1000, seed: int = 0) -> dict:
@@ -20,11 +38,9 @@ def classification_scores(train_x: np.ndarray, train_y: Sequence[int],
     Returns accuracy and macro-F1 in percent, per_intent_f1 (a list of
     num_labels F1 scores in percent, position i = intent i), and predictions.
     """
-    from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import accuracy_score, f1_score
 
-    clf = LogisticRegression(max_iter=max_iter, random_state=seed)
-    clf.fit(train_x, train_y)
+    clf = fit_classifier(train_x, train_y, max_iter, seed)
     pred = clf.predict(test_x)
     labels = list(range(num_labels))
     per_intent = f1_score(test_y, pred, labels=labels, average=None, zero_division=0)

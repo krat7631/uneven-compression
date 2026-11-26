@@ -72,6 +72,11 @@ def main() -> None:
         "rows": {k: len(v) for k, v in sets.items()}, "seconds": {},
         "started": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
+    try:
+        import bitsandbytes
+        run["bitsandbytes"] = bitsandbytes.__version__
+    except ImportError:
+        run["bitsandbytes"] = None
     print(f"{run['gpu']} on {run['node']} -> {out}  rows={run['rows']}", flush=True)
 
     for precision in args.precisions:
