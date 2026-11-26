@@ -4,7 +4,7 @@ import pytest
 
 import uneven_compression
 
-MODULES = ["ingestion", "batching", "serving", "storage", "evaluation"]
+MODULES = ["ingestion", "batching", "serving", "storage", "evaluation", "timing", "analysis", "classify", "cli"]
 
 
 def test_version_is_set():

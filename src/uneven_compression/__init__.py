@@ -10,6 +10,10 @@ Modules, in data-flow order:
     serving     load the model at a configured precision and embed batches
     storage     persist embeddings and timing logs, keyed by configuration
     evaluation  compute quality and efficiency metrics from stored runs
+    timing      GPU-synchronised latency, throughput and peak-memory measurement
+    analysis    where the quality cost of compression lands (rare intents, FP32 margin)
+    classify    the service on new messages: intent, confidence, margin, risk flag
+    cli         `python -m uneven_compression classify <file.csv>`
 """
 
 __version__ = "0.1.0"
